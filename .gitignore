@@ -1,0 +1,12 @@
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# Node packages
+node_modules/
+
+# Yarn lock files
+yarn.lock
+
+# IDEA files
+.idea/
