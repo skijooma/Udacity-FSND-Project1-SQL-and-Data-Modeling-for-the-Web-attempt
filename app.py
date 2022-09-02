@@ -69,9 +69,17 @@ class Artist(db.Model):
     genres = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
+    website_link = db.Column(db.String(120))
+    seeking_venue = db.Column(db.Boolean, default=False)
+    seeking_description = db.Column(db.String(120))
+
 
     def __repr__(self):
-        return f'<Artist {self.id}, {self.name}, complete: {self.city}>'
+        return f'<Artist {self.id}, name: {self.name}, city: {self.city}, state: {self.state}, ' \
+               f'phone: {self.phone}, genres: {self.genres}, ' \
+               f'image_link: {self.image_link}, facebook_link: {self.facebook_link}, ' \
+               f'website_link: {self.website_link}, seeking_venue: {self.seeking_venue}, ' \
+               f'seeking_description: {self.seeking_description}>'
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 
@@ -523,7 +531,72 @@ def create_artist_submission():
     # TODO: insert form data as a new Venue record in the db, instead
     # TODO: modify data to be the data object returned from db insertion
 
-    # on successful db insert, flash success
+    error = False
+    artist_body = {}
+    artist_form = ArtistForm()
+
+    try:
+        # TODO: 1. Remember to validate the form fields (if form.validate():
+        #  2. Also adopt this pattern (name = form.name.data))
+        #  3. And show errors if they come up
+
+        artist_name = artist_form.name.data
+        artist_city = artist_form.city.data
+        artist_state = artist_form.state.data
+        artist_phone = artist_form.phone.data
+        artist_genres = artist_form.genres.data
+        artist_image_link = artist_form.image_link.data
+        artist_facebook_link = artist_form.facebook_link.data
+        artist_website_link = artist_form.website_link.data
+        artist_seeking_venue = artist_form.seeking_venue.data
+        artist_seeking_description = artist_form.seeking_description.data
+
+        print("Artist form request => ", request.get_json())
+        print("Artist Form (WTF) => ", artist_form.seeking_venue.data)
+
+        artist = Artist(
+            name=artist_name,
+            city=artist_city,
+            state=artist_state,
+            phone=artist_phone,
+            genres=artist_genres,
+            image_link=artist_image_link,
+            facebook_link=artist_facebook_link,
+            website_link=artist_website_link,
+            seeking_venue=artist_seeking_venue,
+            seeking_description=artist_seeking_description
+        )
+
+        print("Artist Form (Seeking venue) => ", artist.seeking_venue)
+
+        db.session.add(artist)
+        db.session.commit()
+
+        artist_body['name'] = artist.name,
+        artist_body['city'] = artist.city,
+        artist_body['state'] = artist.state,
+        artist_body['phone'] = artist.phone,
+        artist_body['genres'] = artist.genres,
+        artist_body['image_link'] = artist.image_link,
+        artist_body['facebook_link'] = artist.facebook_link,
+        artist_body['website_link'] = artist.website_link,
+        artist_body['seeking_venue'] = artist.seeking_venue,
+        artist_body['seeking_description'] = artist.seeking_description
+
+        print("Artist object => ", request.get_json()['seeking_venue'])
+
+    except:
+        error = True
+        db.session.rollback()
+        print(sys.exc_info())
+    finally:
+        db.session.close()
+    if error:
+        abort(400)
+    else:
+        return jsonify(artist_body)
+
+        # on successful db insert, flash success
     flash('Artist ' + request.form['name'] + ' was successfully listed!')
     # TODO: on unsuccessful db insert, flash an error instead.
     # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
