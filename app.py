@@ -3,17 +3,17 @@
 # ----------------------------------------------------------------------------#
 
 import logging
+import sys
 from logging import Formatter, FileHandler
 
 import babel
 import dateutil.parser
-from flask import Flask, render_template, request, flash, redirect, url_for
+from flask import Flask, render_template, request, flash, redirect, url_for, abort, jsonify
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
 from forms import *
-
 
 # ----------------------------------------------------------------------------#
 # App Config.
@@ -46,11 +46,15 @@ class Venue(db.Model):
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     website_link = db.Column(db.String(120))
-    looking_for_talent = db.Column(db.Boolean, default=False)
+    seeking_talent = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.String(120))
 
     def __repr__(self):
-      return f'<Venue {self.id}, {self.name}, complete: {self.city}>'
+        return f'<Venue {self.id}, name: {self.name}, city: {self.city}, state: {self.state}, ' \
+               f'address: {self.address}, phone: {self.phone}, genres: {self.genres}, ' \
+               f'image_link: {self.image_link}, facebook_link: {self.facebook_link}, ' \
+               f'website_link: {self.website_link}, seeking_talent: {self.seeking_talent}, ' \
+               f'seeking_description: {self.seeking_description}>'
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 
@@ -67,7 +71,7 @@ class Artist(db.Model):
     facebook_link = db.Column(db.String(120))
 
     def __repr__(self):
-      return f'<Artist {self.id}, {self.name}, complete: {self.city}>'
+        return f'<Artist {self.id}, {self.name}, complete: {self.city}>'
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 
@@ -248,25 +252,78 @@ def create_venue_submission():
     # TODO: insert form data as a new Venue record in the db, instead
     # TODO: modify data to be the data object returned from db insertion
 
+    error = False
+    body = {}
+    form = VenueForm()
+    try:
+        # TODO: 1. Remember to validate the form fields (if form.validate():
+        #  2. Also adopt this pattern (name = form.name.data))
+        #  3. And show errors if they come up
+
+        name = request.get_json()['name']
+        city = request.get_json()['city']
+        state = request.get_json()['state']
+        address = request.get_json()['address']
+        phone = request.get_json()['phone']
+        genres = request.get_json()['genres']
+        image_link = request.get_json()['image_link']
+        facebook_link = request.get_json()['facebook_link']
+        website_link = request.get_json()['website_link']
+        seeking_talent = form.seeking_talent.data
+        seeking_description = request.get_json()['seeking_description']
+
+        print("Venue form request => ", request.get_json())
+        print("Venue Form (WTF) => ", form.seeking_talent.data)
+
+        venue = Venue(
+            name=name,
+            city=city,
+            state=state,
+            address=address,
+            phone=phone,
+            genres=genres,
+            image_link=image_link,
+            facebook_link=facebook_link,
+            website_link=website_link,
+            seeking_talent=seeking_talent,
+            seeking_description=seeking_description
+        )
+
+        print("Venue Form (Seeking talent) => ", venue.seeking_talent)
+
+        db.session.add(venue)
+        db.session.commit()
+
+        body['name'] = venue.name,
+        body['city'] = venue.city,
+        body['state'] = venue.state,
+        body['address'] = venue.address,
+        body['phone'] = venue.phone,
+        body['genres'] = venue.genres,
+        body['image_link'] = venue.image_link,
+        body['facebook_link'] = venue.facebook_link,
+        body['website_link'] = venue.website_link,
+        body['seeking_talent'] = venue.seeking_talent,
+        body['seeking_description'] = venue.seeking_description
+
+        # print("Venue object => ", request.get_json()['seeking_talent'])
+    except:
+        error = True
+        db.session.rollback()
+        print(sys.exc_info())
+    finally:
+        db.session.close()
+    if error:
+        abort(400)
+    else:
+        return jsonify(body)
+
     # on successful db insert, flash success
     flash('Venue ' + request.form['name'] + ' was successfully listed!')
     # TODO: on unsuccessful db insert, flash an error instead.
     # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
     # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
     return render_template('pages/home.html')
-
-
-# class Venue(db.Model):
-#     __tablename__ = 'Venue'
-#
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String)
-#     city = db.Column(db.String(120))
-#     state = db.Column(db.String(120))
-#     address = db.Column(db.String(120))
-#     phone = db.Column(db.String(120))
-#     image_link = db.Column(db.String(500))
-#     facebook_link = db.Column(db.String(120))
 
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
