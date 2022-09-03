@@ -66,7 +66,7 @@ class Artist(db.Model):
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
     phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
+    genres = db.Column(db.ARRAY(db.String))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     website_link = db.Column(db.String(120))
@@ -540,19 +540,19 @@ def create_artist_submission():
         #  2. Also adopt this pattern (name = form.name.data))
         #  3. And show errors if they come up
 
-        artist_name = artist_form.name.data
-        artist_city = artist_form.city.data
-        artist_state = artist_form.state.data
-        artist_phone = artist_form.phone.data
-        artist_genres = artist_form.genres.data
-        artist_image_link = artist_form.image_link.data
-        artist_facebook_link = artist_form.facebook_link.data
-        artist_website_link = artist_form.website_link.data
+        artist_name = request.get_json()['name']
+        artist_city = request.get_json()['city']
+        artist_state = request.get_json()['state']
+        artist_phone = request.get_json()['phone']
+        artist_genres = request.get_json()['genres']
+        artist_image_link = request.get_json()['image_link']
+        artist_facebook_link = request.get_json()['facebook_link']
+        artist_website_link = request.get_json()['website_link']
         artist_seeking_venue = artist_form.seeking_venue.data
-        artist_seeking_description = artist_form.seeking_description.data
+        artist_seeking_description = request.get_json()['seeking_description']
 
         print("Artist form request => ", request.get_json())
-        print("Artist Form (WTF) => ", artist_form.seeking_venue.data)
+        print("Artist Form (WTF) => ", artist_form.website_link.data)
 
         artist = Artist(
             name=artist_name,
@@ -567,7 +567,7 @@ def create_artist_submission():
             seeking_description=artist_seeking_description
         )
 
-        print("Artist Form (Seeking venue) => ", artist.seeking_venue)
+        print("Artist Form (Seeking venue) => ", artist_form.name.data)
 
         db.session.add(artist)
         db.session.commit()
@@ -583,7 +583,7 @@ def create_artist_submission():
         artist_body['seeking_venue'] = artist.seeking_venue,
         artist_body['seeking_description'] = artist.seeking_description
 
-        print("Artist object => ", request.get_json()['seeking_venue'])
+        print("Artist object => ", artist)
 
     except:
         error = True
