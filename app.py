@@ -48,7 +48,7 @@ class Venue(db.Model):
     website_link = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.String(120))
-    show_id = db.relationship('Show', backref='show', uselist=False)
+    show_id = db.relationship('Show', backref='show_venue', uselist=False)
 
 
     def __repr__(self):
@@ -74,7 +74,7 @@ class Artist(db.Model):
     website_link = db.Column(db.String(120))
     seeking_venue = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.String(120))
-    show_id = db.relationship('Show', backref='show')
+    show_id = db.relationship('Show', backref='show_artists')
 
     def __repr__(self):
         return f'<Artist {self.id}, name: {self.name}, city: {self.city}, state: {self.state}, ' \
@@ -100,6 +100,7 @@ class Show(db.Model):
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 
+# db.drop_all()
 db.create_all()
 
 
@@ -317,16 +318,16 @@ def create_venue_submission():
         db.session.add(venue)
         db.session.commit()
 
-        body['name'] = venue.name,
-        body['city'] = venue.city,
-        body['state'] = venue.state,
-        body['address'] = venue.address,
-        body['phone'] = venue.phone,
-        body['genres'] = venue.genres,
-        body['image_link'] = venue.image_link,
-        body['facebook_link'] = venue.facebook_link,
-        body['website_link'] = venue.website_link,
-        body['seeking_talent'] = venue.seeking_talent,
+        body['name'] = venue.name
+        body['city'] = venue.city
+        body['state'] = venue.state
+        body['address'] = venue.address
+        body['phone'] = venue.phone
+        body['genres'] = venue.genres
+        body['image_link'] = venue.image_link
+        body['facebook_link'] = venue.facebook_link
+        body['website_link'] = venue.website_link
+        body['seeking_talent'] = venue.seeking_talent
         body['seeking_description'] = venue.seeking_description
 
         # print("Venue object => ", request.get_json()['seeking_talent'])
@@ -675,6 +676,48 @@ def create_shows():
 def create_show_submission():
     # called to create new shows in the db, upon submitting new show listing form
     # TODO: insert form data as a new Show record in the db, instead
+
+
+    error = False
+    body = {}
+    form = ShowForm()
+
+    try:
+        # TODO: 1. Remember to validate the form fields (if form.validate():
+        #  2. Also adopt this pattern (name = form.name.data))
+        #  3. And show errors if they come up
+
+        venue_id = request.get_json()['venue_id']
+        artist_id = request.get_json()['artist_id']
+        start_time = request.get_json()['start_time']
+
+        print("Show form request => ", request.get_json())
+        print("Show Form (WTF) => ", form.start_time)
+
+        show = Show(
+            venue_id=venue_id,
+            artist_id=artist_id,
+            start_time=start_time
+        )
+
+        db.session.add(show)
+        db.session.commit()
+
+        body['venue_id'] = show.venue_id
+        body['artist_id'] = show.artist_id
+        body['start_time'] = show.start_time
+
+    except:
+        error = True
+        db.session.rollback()
+        print(sys.exc_info())
+    finally:
+        db.session.close()
+
+    if error:
+        abort(400)
+    else:
+        return jsonify(body)
 
     # on successful db insert, flash success
     flash('Show was successfully listed!')
