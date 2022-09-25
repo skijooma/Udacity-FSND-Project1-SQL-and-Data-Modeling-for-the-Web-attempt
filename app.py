@@ -8,10 +8,14 @@ from logging import Formatter, FileHandler
 
 import babel
 import dateutil.parser
+# import sqlalchemy
 from flask import Flask, render_template, request, flash, redirect, url_for, abort, jsonify
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from sqlalchemy import cast, Date
+from sqlalchemy.dialects.postgresql import JSON, ARRAY
+from datetime import date
 
 from forms import *
 
@@ -34,7 +38,7 @@ migrate = Migrate(app, db)
 # ----------------------------------------------------------------------------#
 
 class Venue(db.Model):
-    __tablename__ = 'Venue'
+    # __tablename__ = 'Venue'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -50,7 +54,6 @@ class Venue(db.Model):
     seeking_description = db.Column(db.String(120))
     show_id = db.relationship('Show', backref='show_venue', uselist=False)
 
-
     def __repr__(self):
         return f'<Venue {self.id}, name: {self.name}, city: {self.city}, state: {self.state}, ' \
                f'address: {self.address}, phone: {self.phone}, genres: {self.genres}, ' \
@@ -61,7 +64,7 @@ class Venue(db.Model):
 
 
 class Artist(db.Model):
-    __tablename__ = 'Artist'
+    # __tablename__ = 'Artist'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -86,15 +89,15 @@ class Artist(db.Model):
 
 
 class Show(db.Model):
-    __tablename__ = 'Show'
+    # __tablename__ = 'Show'
 
     id = db.Column(db.Integer, primary_key=True)
-    venue_id = db.Column(db.Integer, db.ForeignKey("Venue.id"))
-    artist_id = db.Column(db.Integer, db.ForeignKey("Artist.id"))
-    start_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow())
+    venue_id = db.Column(db.Integer, db.ForeignKey("venue.id"))
+    artist_id = db.Column(db.Integer, db.ForeignKey("artist.id"))
+    start_time = db.Column(db.DateTime(timezone=True), nullable=False, default=datetime.utcnow())
 
     def __repr__(self):
-        return f'<Artist {self.id}, artist: {self.artist_id}, venue: {self.venue_id}, ' \
+        return f'<Show {self.id}, artist: {self.artist_id}, venue: {self.venue_id}, ' \
                f'start_time: {self.start_time}>'
 
 
@@ -109,11 +112,16 @@ db.create_all()
 # ----------------------------------------------------------------------------#
 
 def format_datetime(value, format='medium'):
-    date = dateutil.parser.parse(value)
+    if isinstance(value, str):
+        date = dateutil.parser.parse(value)
+    else:
+        date = value
+
     if format == 'full':
         format = "EEEE MMMM, d, y 'at' h:mma"
     elif format == 'medium':
         format = "EE MM, dd, y h:mma"
+
     return babel.dates.format_datetime(date, format, locale='en')
 
 
@@ -132,7 +140,7 @@ def index():
 #  Venues
 #  ----------------------------------------------------------------
 
-@app.route('/venues')
+@app.route('/venues', methods=['GET'])
 def venues():
     # TODO: replace with real venues data.
     #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
@@ -157,7 +165,34 @@ def venues():
             "num_upcoming_shows": 0,
         }]
     }]
+
+    # shows = db.session.query(Show).filter(Show.start_time > '2022-09-01 17:03:06').count()  # Seems correct
+    # filtered_venues = db.session.query(Venue.id, Venue.name, shows).join(Show, Venue.show_id).all()  # Seems correct
+    # venues = db.session.query(Venue.city, Venue.state,
+    #                           db.func.json_agg(filtered_venues).label("vn"), Venue.id).group_by(
+    #     Venue.city, Venue.state, Venue.id).all()
+
     return render_template('pages/venues.html', areas=data)
+
+
+# SELECT
+# city, state,
+# (
+#     SELECT json_agg(venue)
+# FROM (
+#     SELECT id, name, (SELECT COUNT(*) FROM "Show") AS num_upcoming_shows
+# FROM "Venue"
+# ) venue
+# ) AS venues
+# FROM "Venue" group by city, state;
+
+# SELECT v.city, v.state
+# , json_agg((SELECT venue.id, venue.name, venue.num_upcoming_shows FROM Venue AS venue)) AS Venues
+# FROM   "Venue" as v
+# JOIN   "Show" as s ON s.id = v.show_id
+# GROUP  BY v.city, v.state;
+
+# TODO: Try changing table names to conventional Postgres stuff.
 
 
 @app.route('/venues/search', methods=['POST'])
@@ -259,6 +294,9 @@ def show_venue(venue_id):
         "upcoming_shows_count": 1,
     }
     data = list(filter(lambda d: d['id'] == venue_id, [data1, data2, data3]))[0]
+
+    venue = db.session.query()
+
     return render_template('pages/show_venue.html', venue=data)
 
 
@@ -375,7 +413,13 @@ def artists():
         "id": 6,
         "name": "The Wild Sax Band",
     }]
-    return render_template('pages/artists.html', artists=data)
+
+    db_artists = db.session.query(Artist).all()
+
+    for artist in db_artists:
+        print("Artist in DB: => ", artist.name)
+
+    return render_template('pages/artists.html', artists=db_artists)
 
 
 @app.route('/artists/search', methods=['POST'])
@@ -399,6 +443,7 @@ def search_artists():
 def show_artist(artist_id):
     # shows the artist page with the given artist_id
     # TODO: replace with real artist data from the artist table, using artist_id
+
     data1 = {
         "id": 4,
         "name": "Guns N Petals",
@@ -470,7 +515,40 @@ def show_artist(artist_id):
         "past_shows_count": 0,
         "upcoming_shows_count": 3,
     }
-    data = list(filter(lambda d: d['id'] == artist_id, [data1, data2, data3]))[0]
+    # data = list(filter(lambda d: d['id'] == artist_id, [data1, data2, data3]))[0]
+
+    db_artist = db.session.query(Artist).filter(Artist.id == artist_id).first()
+    past_shows = db.session.query(Show.venue_id, Venue.name.label('venue_name'),
+                                  Venue.image_link.label('venue_image_link'), Show.start_time).join(Venue,
+                                                                                                    Show.venue_id == Venue.id).filter(
+        Show.artist_id == artist_id, db.cast(Show.start_time, db.Date) < date.today()).all()
+    upcoming_shows = db.session.query(Show.venue_id, Venue.name.label('venue_name'),
+                                      Venue.image_link.label('venue_image_link'), Show.start_time).join(Venue,
+                                                                                                        Show.venue_id == Venue.id).filter(
+        Show.artist_id == artist_id, db.cast(Show.start_time, db.Date) >= date.today()).all()
+
+    past_shows_count = db.session.query(Show).join(Venue, Show.venue_id == Venue.id).filter(
+        Show.artist_id == artist_id, db.cast(Show.start_time, db.Date) < date.today()).count()
+    upcoming_shows_count = db.session.query(Show).join(Venue, Show.venue_id == Venue.id).filter(
+        Show.artist_id == artist_id, db.cast(Show.start_time, db.Date) >= date.today()).count()
+
+    data = {
+        "id": db_artist.id,
+        "name": db_artist.name,
+        "genres": db_artist.genres,
+        "city": db_artist.city,
+        "state": db_artist.state,
+        "phone": db_artist.phone,
+        "seeking_venue": db_artist.seeking_venue,
+        "image_link": db_artist.image_link,
+        "past_shows": [show._asdict() for show in past_shows],
+        "upcoming_shows": [show._asdict() for show in upcoming_shows],
+        "past_shows_count": past_shows_count,
+        "upcoming_shows_count": upcoming_shows_count,
+    }
+
+    print("DB Artist => ", data)
+
     return render_template('pages/show_artist.html', artist=data)
 
 
@@ -677,7 +755,6 @@ def create_show_submission():
     # called to create new shows in the db, upon submitting new show listing form
     # TODO: insert form data as a new Show record in the db, instead
 
-
     error = False
     body = {}
     form = ShowForm()
@@ -761,3 +838,18 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
 '''
+
+# # venues = Venue.query("Venue.city").group_by(Venue.city).all()
+#
+# shows = db.session.query(Show).filter(Show.start_time > '2022-09-01 17:03:06').count()  # Seems correct
+# filtered_venues = db.session.query(Venue.id, Venue.name, shows).join(Show, Venue.show_id).all()  # Seems correct
+#
+# # venues_agg = db.func.array_agg(Venue.id, type_=db.ARRAY(db.Integer)).label('venuez')
+#
+# # venues = db.session.query(Venue.city, Venue.state,
+# #                           db.func.array(filtered_venues), Venue.id).group_by(
+# #     Venue.city, Venue.state, Venue.id).all()
+#
+# venues = db.session.query(Venue.city, Venue.state,
+#                           db.func.json_agg(filtered_venues).label("vn"), Venue.id).group_by(
+#     Venue.city, Venue.state, Venue.id).all()
