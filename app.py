@@ -492,20 +492,25 @@ def show_artist(artist_id):
 @app.route('/artists/<int:artist_id>/edit', methods=['GET'])
 def edit_artist(artist_id):
     form = ArtistForm()
-    artist = {
-        "id": 4,
-        "name": "Guns N Petals",
-        "genres": ["Rock n Roll"],
-        "city": "San Francisco",
-        "state": "CA",
-        "phone": "326-123-5000",
-        "website": "https://www.gunsnpetalsband.com",
-        "facebook_link": "https://www.facebook.com/GunsNPetals",
-        "seeking_venue": True,
-        "seeking_description": "Looking for shows to perform at in the San Francisco Bay Area!",
-        "image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80"
-    }
+
+    artist = db.session.query(Artist.id, Artist.name, Artist.genres, Artist.city, Artist.state, Artist.phone,
+                              Artist.website_link, Artist.facebook_link, Artist.seeking_venue,
+                              Artist.seeking_description, Artist.image_link).filter(
+        Artist.id == artist_id).first()
+
     # TODO: populate form with fields from artist with ID <artist_id>
+    print("Edit artist GET request => ", artist)
+    form.name.data = artist.name
+    form.city.data = artist.city
+    form.state.data = artist.state
+    form.phone.data = artist.phone
+    form.image_link.data = artist.image_link
+    form.genres.data = artist.genres
+    form.facebook_link.data = artist.facebook_link
+    form.website_link.data = artist.website_link
+    form.seeking_venue.data = artist.seeking_venue
+    form.seeking_description.data = artist.seeking_description
+
     return render_template('forms/edit_artist.html', form=form, artist=artist)
 
 
@@ -513,6 +518,41 @@ def edit_artist(artist_id):
 def edit_artist_submission(artist_id):
     # TODO: take values from the form submitted, and update existing
     # artist record with ID <artist_id> using the new attributes
+
+    existing_artist = db.session.query(Artist).filter(Artist.id == artist_id).first()
+
+    # TODO: if artist_form.validate():
+
+    error = False
+    artist_body = {}
+    artist_form = ArtistForm()
+
+    print("Artist form name =>", artist_form.name.data)
+
+    try:
+        existing_artist.name = request.get_json()['name']
+        existing_artist.city = request.get_json()['city']
+        existing_artist.state = request.get_json()['state']
+        existing_artist.phone = request.get_json()['phone']
+        existing_artist.genres = request.get_json()['genres']
+        existing_artist.image_link = request.get_json()['image_link']
+        existing_artist.facebook_link = request.get_json()['facebook_link']
+        existing_artist.website_link = request.get_json()['website_link']
+        existing_artist.seeking_venue = artist_form.seeking_venue.data
+        existing_artist.seeking_description = request.get_json()['seeking_description']
+
+        print("Saving existing artist => ", existing_artist.name)
+        db.session.commit()
+    except:
+        error = True
+        db.session.rollback()
+        print(sys.exc_info())
+    finally:
+        db.session.close()
+    if error:
+        abort(400)
+    else:
+        return jsonify(artist_body)
 
     return redirect(url_for('show_artist', artist_id=artist_id))
 
