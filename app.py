@@ -153,19 +153,19 @@ def venues():
     for grouping in venue_city_groupings:
         # print("Venue city => ", grouping[0])
         venues_in_city = db.session.query(Venue.id, Venue.name).filter(Venue.city == grouping[0]).all()
-        grouping = grouping._asdict() # Dictionary format of grouping.
+        grouping = grouping._asdict()  # Dictionary format of grouping.
         # print("Venues in city => ", grouping)
         venues_list = []
         for venue_in_city in venues_in_city:
             num_shows = db.session.query(Show).join(Venue, Show.venue_id == Venue.id).filter(
                 Show.venue_id == venue_in_city[0], db.cast(Show.start_time, db.Date) >= date.today()).count()
             # print("Show count for venue => ", num_shows)
-            venue_in_city = venue_in_city._asdict() # Dictionary format of venue_in_city.
-            venue_in_city["num_upcoming_shows"] = num_shows # Writing upcoming show count to object.
+            venue_in_city = venue_in_city._asdict()  # Dictionary format of venue_in_city.
+            venue_in_city["num_upcoming_shows"] = num_shows  # Writing upcoming show count to object.
             # print("Appended => ", venue_in_city)
-            venues_list.append(venue_in_city) # Adding this venue to the list of venues per city.
+            venues_list.append(venue_in_city)  # Adding this venue to the list of venues per city.
 
-        grouping["venues"] = venues_list # Venues attribute for this city.
+        grouping["venues"] = venues_list  # Venues attribute for this city.
         print("Structured venues => ", grouping)
         venues_data.append(grouping)
 
@@ -195,86 +195,36 @@ def search_venues():
 def show_venue(venue_id):
     # shows the venue page with the given venue_id
     # TODO: replace with real venue data from the venues table, using venue_id
-    data1 = {
-        "id": 1,
-        "name": "The Musical Hop",
-        "genres": ["Jazz", "Reggae", "Swing", "Classical", "Folk"],
-        "address": "1015 Folsom Street",
-        "city": "San Francisco",
-        "state": "CA",
-        "phone": "123-123-1234",
-        "website": "https://www.themusicalhop.com",
-        "facebook_link": "https://www.facebook.com/TheMusicalHop",
-        "seeking_talent": True,
-        "seeking_description": "We are on the lookout for a local artist to play every two weeks. Please call us.",
-        "image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60",
-        "past_shows": [{
-            "artist_id": 4,
-            "artist_name": "Guns N Petals",
-            "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-            "start_time": "2019-05-21T21:30:00.000Z"
-        }],
-        "upcoming_shows": [],
-        "past_shows_count": 1,
-        "upcoming_shows_count": 0,
-    }
-    data2 = {
-        "id": 2,
-        "name": "The Dueling Pianos Bar",
-        "genres": ["Classical", "R&B", "Hip-Hop"],
-        "address": "335 Delancey Street",
-        "city": "New York",
-        "state": "NY",
-        "phone": "914-003-1132",
-        "website": "https://www.theduelingpianos.com",
-        "facebook_link": "https://www.facebook.com/theduelingpianos",
-        "seeking_talent": False,
-        "image_link": "https://images.unsplash.com/photo-1497032205916-ac775f0649ae?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=750&q=80",
-        "past_shows": [],
-        "upcoming_shows": [],
-        "past_shows_count": 0,
-        "upcoming_shows_count": 0,
-    }
-    data3 = {
-        "id": 3,
-        "name": "Park Square Live Music & Coffee",
-        "genres": ["Rock n Roll", "Jazz", "Classical", "Folk"],
-        "address": "34 Whiskey Moore Ave",
-        "city": "San Francisco",
-        "state": "CA",
-        "phone": "415-000-1234",
-        "website": "https://www.parksquarelivemusicandcoffee.com",
-        "facebook_link": "https://www.facebook.com/ParkSquareLiveMusicAndCoffee",
-        "seeking_talent": False,
-        "image_link": "https://images.unsplash.com/photo-1485686531765-ba63b07845a7?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=747&q=80",
-        "past_shows": [{
-            "artist_id": 5,
-            "artist_name": "Matt Quevedo",
-            "artist_image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
-            "start_time": "2019-06-15T23:00:00.000Z"
-        }],
-        "upcoming_shows": [{
-            "artist_id": 6,
-            "artist_name": "The Wild Sax Band",
-            "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-            "start_time": "2035-04-01T20:00:00.000Z"
-        }, {
-            "artist_id": 6,
-            "artist_name": "The Wild Sax Band",
-            "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-            "start_time": "2035-04-08T20:00:00.000Z"
-        }, {
-            "artist_id": 6,
-            "artist_name": "The Wild Sax Band",
-            "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-            "start_time": "2035-04-15T20:00:00.000Z"
-        }],
-        "past_shows_count": 1,
-        "upcoming_shows_count": 1,
-    }
-    data = list(filter(lambda d: d['id'] == venue_id, [data1, data2, data3]))[0]
 
-    venue = db.session.query()
+    selected_venue = db.session.query(Venue).filter(Venue.id == venue_id).first()
+    past_shows = db.session.query(Show.artist_id, Artist.name.label('artist_name'),
+                                  Artist.image_link.label('artist_image_link'), Show.start_time).join(Artist,
+                                                                                                      Show.artist_id == Artist.id).filter(
+        Show.venue_id == venue_id, db.cast(Show.start_time, db.Date) < date.today()).all()
+    upcoming_shows = db.session.query(Show.artist_id, Artist.name.label('artist_name'),
+                                      Artist.image_link.label('artist_image_link'), Show.start_time).join(Artist,
+                                                                                                          Show.artist_id == Artist.id).filter(
+        Show.venue_id == venue_id, db.cast(Show.start_time, db.Date) >= date.today()).all()
+    past_shows_count = db.session.query(Show).join(Artist, Show.artist_id == Artist.id).filter(
+        Show.venue_id == venue_id, db.cast(Show.start_time, db.Date) < date.today()).count()
+    upcoming_shows_count = db.session.query(Show).join(Artist, Show.artist_id == Artist.id).filter(
+        Show.venue_id == venue_id, db.cast(Show.start_time, db.Date) >= date.today()).count()
+
+    # Aggregating data from the Venue, with their respective Shows data.
+    data = {
+        "id": selected_venue.id,
+        "name": selected_venue.name,
+        "genres": selected_venue.genres,
+        "city": selected_venue.city,
+        "state": selected_venue.state,
+        "phone": selected_venue.phone,
+        "seeking_talent": selected_venue.seeking_talent,
+        "image_link": selected_venue.image_link,
+        "past_shows": [show._asdict() for show in past_shows],
+        "upcoming_shows": [show._asdict() for show in upcoming_shows],
+        "past_shows_count": past_shows_count,
+        "upcoming_shows_count": upcoming_shows_count,
+    }
 
     return render_template('pages/show_venue.html', venue=data)
 
@@ -445,7 +395,7 @@ def show_artist(artist_id):
     upcoming_shows_count = db.session.query(Show).join(Venue, Show.venue_id == Venue.id).filter(
         Show.artist_id == artist_id, db.cast(Show.start_time, db.Date) >= date.today()).count()
 
-    # Aggregating data from the Artist with their Shows data.
+    # Aggregating data from the Artist, with their respective Shows data.
     data = {
         "id": db_artist.id,
         "name": db_artist.name,
