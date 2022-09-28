@@ -144,55 +144,34 @@ def index():
 def venues():
     # TODO: replace with real venues data.
     #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-    data = [{
-        "city": "San Francisco",
-        "state": "CA",
-        "venues": [{
-            "id": 1,
-            "name": "The Musical Hop",
-            "num_upcoming_shows": 0,
-        }, {
-            "id": 3,
-            "name": "Park Square Live Music & Coffee",
-            "num_upcoming_shows": 1,
-        }]
-    }, {
-        "city": "New York",
-        "state": "NY",
-        "venues": [{
-            "id": 2,
-            "name": "The Dueling Pianos Bar",
-            "num_upcoming_shows": 0,
-        }]
-    }]
 
-    # shows = db.session.query(Show).filter(Show.start_time > '2022-09-01 17:03:06').count()  # Seems correct
-    # filtered_venues = db.session.query(Venue.id, Venue.name, shows).join(Show, Venue.show_id).all()  # Seems correct
-    # venues = db.session.query(Venue.city, Venue.state,
-    #                           db.func.json_agg(filtered_venues).label("vn"), Venue.id).group_by(
-    #     Venue.city, Venue.state, Venue.id).all()
+    venue_city_groupings = db.session.query(Venue.city, Venue.state).group_by(Venue.city, Venue.state).all()
+    print("Venue/City groupings => ", venue_city_groupings)
 
-    return render_template('pages/venues.html', areas=data)
+    venues_data = []
 
+    for grouping in venue_city_groupings:
+        # print("Venue city => ", grouping[0])
+        venues_in_city = db.session.query(Venue.id, Venue.name).filter(Venue.city == grouping[0]).all()
+        grouping = grouping._asdict() # Dictionary format of grouping.
+        # print("Venues in city => ", grouping)
+        venues_list = []
+        for venue_in_city in venues_in_city:
+            num_shows = db.session.query(Show).join(Venue, Show.venue_id == Venue.id).filter(
+                Show.venue_id == venue_in_city[0], db.cast(Show.start_time, db.Date) >= date.today()).count()
+            # print("Show count for venue => ", num_shows)
+            venue_in_city = venue_in_city._asdict() # Dictionary format of venue_in_city.
+            venue_in_city["num_upcoming_shows"] = num_shows # Writing upcoming show count to object.
+            # print("Appended => ", venue_in_city)
+            venues_list.append(venue_in_city) # Adding this venue to the list of venues per city.
 
-# SELECT
-# city, state,
-# (
-#     SELECT json_agg(venue)
-# FROM (
-#     SELECT id, name, (SELECT COUNT(*) FROM "Show") AS num_upcoming_shows
-# FROM "Venue"
-# ) venue
-# ) AS venues
-# FROM "Venue" group by city, state;
+        grouping["venues"] = venues_list # Venues attribute for this city.
+        print("Structured venues => ", grouping)
+        venues_data.append(grouping)
 
-# SELECT v.city, v.state
-# , json_agg((SELECT venue.id, venue.name, venue.num_upcoming_shows FROM Venue AS venue)) AS Venues
-# FROM   "Venue" as v
-# JOIN   "Show" as s ON s.id = v.show_id
-# GROUP  BY v.city, v.state;
+    # print("All structured venues => ", venues_data)
 
-# TODO: Try changing table names to conventional Postgres stuff.
+    return render_template('pages/venues.html', areas=venues_data)
 
 
 @app.route('/venues/search', methods=['POST'])
