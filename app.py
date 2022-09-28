@@ -187,6 +187,35 @@ def search_venues():
             "num_upcoming_shows": 0,
         }]
     }
+
+    form = request.form
+    if "search_term" in form.keys():
+        search_value = form['search_term']
+        # print("Artist search term => ", request.form.get("search_term"))
+        results = db.session.query(Venue.id, Venue.name).filter(Venue.name.ilike("%" + search_value + "%")).all()
+        results_count = db.session.query(Venue).filter(Venue.name.ilike("%" + search_value + "%")).count()
+
+        data = []  # Final list of responses.
+
+        # Looping through results to get number of shows per venue.
+        for result in results:
+            # print("Result in results => ", result.name)
+            num_upcoming_shows = db.session.query(Show).join(Venue, Show.artist_id == Venue.id).filter(
+                Show.venue_id == result.id, db.cast(Show.start_time, db.Date) >= date.today()).count()
+            data_item = {
+                "id": result.id,
+                "name": result.name,
+                "num_upcoming_shows": num_upcoming_shows,
+            }
+            data.append(data_item)
+
+        response = {
+            "count": results_count,
+            "data": data
+        }  # Response object
+
+        # print("Artist search response data => ", response)
+
     return render_template('pages/search_venues.html', results=response,
                            search_term=request.form.get('search_term', ''))
 
