@@ -4,18 +4,15 @@
 
 import logging
 import sys
+from datetime import date
 from logging import Formatter, FileHandler
 
 import babel
 import dateutil.parser
-# import sqlalchemy
 from flask import Flask, render_template, request, flash, redirect, url_for, abort, jsonify
+from flask_migrate import Migrate
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
-from sqlalchemy import cast, Date
-from sqlalchemy.dialects.postgresql import JSON, ARRAY
-from datetime import date
 
 from forms import *
 
@@ -38,7 +35,6 @@ migrate = Migrate(app, db)
 # ----------------------------------------------------------------------------#
 
 class Venue(db.Model):
-    # __tablename__ = 'Venue'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -50,7 +46,7 @@ class Venue(db.Model):
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     website_link = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean, default=False)
+    seeking_talent = db.Column(db.Boolean)
     seeking_description = db.Column(db.String(120))
     show_id = db.relationship('Show', backref='show_venue', uselist=False)
 
@@ -64,7 +60,6 @@ class Venue(db.Model):
 
 
 class Artist(db.Model):
-    # __tablename__ = 'Artist'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -89,7 +84,6 @@ class Artist(db.Model):
 
 
 class Show(db.Model):
-    # __tablename__ = 'Show'
 
     id = db.Column(db.Integer, primary_key=True)
     venue_id = db.Column(db.Integer, db.ForeignKey("venue.id"))
@@ -146,7 +140,7 @@ def venues():
     #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
 
     venue_city_groupings = db.session.query(Venue.city, Venue.state).group_by(Venue.city, Venue.state).all()
-    print("Venue/City groupings => ", venue_city_groupings)
+    # print("Venue/City groupings => ", venue_city_groupings)
 
     venues_data = []
 
@@ -179,14 +173,6 @@ def search_venues():
     # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
     # seach for Hop should return "The Musical Hop".
     # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
-    response = {
-        "count": 1,
-        "data": [{
-            "id": 2,
-            "name": "The Dueling Pianos Bar",
-            "num_upcoming_shows": 0,
-        }]
-    }
 
     form = request.form
     if "search_term" in form.keys():
@@ -274,12 +260,8 @@ def create_venue_submission():
 
     error = False
     body = {}
-    form = VenueForm()
-    try:
-        # TODO: 1. Remember to validate the form fields (if form.validate():
-        #  2. Also adopt this pattern (name = form.name.data))
-        #  3. And show errors if they come up
 
+    try:
         name = request.get_json()['name']
         city = request.get_json()['city']
         state = request.get_json()['state']
@@ -289,11 +271,8 @@ def create_venue_submission():
         image_link = request.get_json()['image_link']
         facebook_link = request.get_json()['facebook_link']
         website_link = request.get_json()['website_link']
-        seeking_talent = form.seeking_talent.data
+        seeking_talent = request.get_json()['seeking_talent']
         seeking_description = request.get_json()['seeking_description']
-
-        print("Venue form request => ", request.get_json())
-        print("Venue Form (WTF) => ", form.seeking_talent.data)
 
         venue = Venue(
             name=name,
@@ -309,6 +288,10 @@ def create_venue_submission():
             seeking_description=seeking_description
         )
 
+        form = VenueForm(obj=venue)
+
+        print("Venue Form (Validated) => ", form.validate())
+        print("Venue Form (WTF) => ", form.data)
         print("Venue Form (Seeking talent) => ", venue.seeking_talent)
 
         db.session.add(venue)
@@ -325,8 +308,6 @@ def create_venue_submission():
         body['website_link'] = venue.website_link
         body['seeking_talent'] = venue.seeking_talent
         body['seeking_description'] = venue.seeking_description
-
-        # print("Venue object => ", request.get_json()['seeking_talent'])
     except:
         error = True
         db.session.rollback()
@@ -334,15 +315,15 @@ def create_venue_submission():
     finally:
         db.session.close()
     if error:
+        # On unsuccessful db insert, flash an error instead.
+        flash('An error occurred. Venue ' + venue.name + ' could not be listed.')
         abort(400)
     else:
+        # On successful db insert, flash success
+        flash('Venue ' + venue.name + ' was successfully listed!')
+
         return jsonify(body)
 
-    # on successful db insert, flash success
-    flash('Venue ' + request.form['name'] + ' was successfully listed!')
-    # TODO: on unsuccessful db insert, flash an error instead.
-    # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
-    # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
     return render_template('pages/home.html')
 
 
@@ -797,18 +778,3 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
 '''
-
-# # venues = Venue.query("Venue.city").group_by(Venue.city).all()
-#
-# shows = db.session.query(Show).filter(Show.start_time > '2022-09-01 17:03:06').count()  # Seems correct
-# filtered_venues = db.session.query(Venue.id, Venue.name, shows).join(Show, Venue.show_id).all()  # Seems correct
-#
-# # venues_agg = db.func.array_agg(Venue.id, type_=db.ARRAY(db.Integer)).label('venuez')
-#
-# # venues = db.session.query(Venue.city, Venue.state,
-# #                           db.func.array(filtered_venues), Venue.id).group_by(
-# #     Venue.city, Venue.state, Venue.id).all()
-#
-# venues = db.session.query(Venue.city, Venue.state,
-#                           db.func.json_agg(filtered_venues).label("vn"), Venue.id).group_by(
-#     Venue.city, Venue.state, Venue.id).all()
