@@ -70,7 +70,7 @@ class Artist(db.Model):
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     website_link = db.Column(db.String(120))
-    seeking_venue = db.Column(db.Boolean, default=False)
+    seeking_venue = db.Column(db.Boolean)
     seeking_description = db.Column(db.String(120))
     show_id = db.relationship('Show', backref='show_artists')
 
@@ -575,47 +575,43 @@ def create_artist_form():
 
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
-    # called upon submitting the new artist listing form
-    # TODO: insert form data as a new Venue record in the db, instead
+    # Called upon submitting the new artist listing form
+    # Inserts form data as a new Venue record in the db.
     # TODO: modify data to be the data object returned from db insertion
 
     error = False
     artist_body = {}
-    artist_form = ArtistForm()
 
     try:
-        # TODO: 1. Remember to validate the form fields (if form.validate():
-        #  2. Also adopt this pattern (name = form.name.data))
-        #  3. And show errors if they come up
-
-        artist_name = request.get_json()['name']
-        artist_city = request.get_json()['city']
-        artist_state = request.get_json()['state']
-        artist_phone = request.get_json()['phone']
-        artist_genres = request.get_json()['genres']
-        artist_image_link = request.get_json()['image_link']
-        artist_facebook_link = request.get_json()['facebook_link']
-        artist_website_link = request.get_json()['website_link']
-        artist_seeking_venue = artist_form.seeking_venue.data
-        artist_seeking_description = request.get_json()['seeking_description']
-
-        print("Artist form request => ", request.get_json())
-        print("Artist Form (WTF) => ", artist_form.website_link.data)
+        name = request.get_json()['name']
+        city = request.get_json()['city']
+        state = request.get_json()['state']
+        phone = request.get_json()['phone']
+        genres = request.get_json()['genres']
+        image_link = request.get_json()['image_link']
+        facebook_link = request.get_json()['facebook_link']
+        website_link = request.get_json()['website_link']
+        seeking_venue = request.get_json()['seeking_venue']
+        seeking_description = request.get_json()['seeking_description']
 
         artist = Artist(
-            name=artist_name,
-            city=artist_city,
-            state=artist_state,
-            phone=artist_phone,
-            genres=artist_genres,
-            image_link=artist_image_link,
-            facebook_link=artist_facebook_link,
-            website_link=artist_website_link,
-            seeking_venue=artist_seeking_venue,
-            seeking_description=artist_seeking_description
+            name=name,
+            city=city,
+            state=state,
+            phone=phone,
+            genres=genres,
+            image_link=image_link,
+            facebook_link=facebook_link,
+            website_link=website_link,
+            seeking_venue=seeking_venue,
+            seeking_description=seeking_description
         )
 
-        print("Artist Form (Seeking venue) => ", artist_form.name.data)
+        form = ArtistForm(obj=artist)
+
+        print("Artist Form (Validated) => ", form.validate())
+        print("Artist Form (WTF) => ", form.data)
+        print("Artist Form (Seeking venue) => ", artist.seeking_venue)
 
         db.session.add(artist)
         db.session.commit()
@@ -630,9 +626,6 @@ def create_artist_submission():
         artist_body['website_link'] = artist.website_link,
         artist_body['seeking_venue'] = artist.seeking_venue,
         artist_body['seeking_description'] = artist.seeking_description
-
-        print("Artist object => ", artist)
-
     except:
         error = True
         db.session.rollback()
@@ -640,14 +633,15 @@ def create_artist_submission():
     finally:
         db.session.close()
     if error:
+        # On unsuccessful db insert, flash an error instead.
+        flash('An error occurred. Artist ' + artist.name + ' could not be listed.')
         abort(400)
     else:
+        # On successful db insert, flash success
+        flash('Artist ' + artist.name + ' was successfully listed!')
+
         return jsonify(artist_body)
 
-        # on successful db insert, flash success
-    flash('Artist ' + request.form['name'] + ' was successfully listed!')
-    # TODO: on unsuccessful db insert, flash an error instead.
-    # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
     return render_template('pages/home.html')
 
 

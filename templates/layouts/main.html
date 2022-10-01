@@ -122,48 +122,48 @@
 
 <script>
 
-    /* Handling Venue form submission. */
-	document.getElementById('venue-form').onsubmit = function (e) {
-		e.preventDefault();
-		const formData = new FormData(document.getElementById('venue-form'));
-		const payload = {
-			'name': document.getElementById('name').value,
-			'city': document.getElementById('city').value,
-			'state': document.getElementById('state').value,
-			'address': document.getElementById('address').value,
-			'phone': document.getElementById('phone').value,
-			'genres': formData.getAll('genres'),
-			'facebook_link': document.getElementById('facebook_link').value,
-			'image_link': document.getElementById('image_link').value,
-			'website_link': document.getElementById('website_link').value,
-			'seeking_talent': document.getElementById('seeking_talent').checked,
-			'seeking_description': document.getElementById('seeking_description').value,
-		}
-		console.log("Venue form submitted [Form Data] ==> ", payload);
-
-		fetch('/venues/create', {
-			method: 'POST',
-			body: JSON.stringify(payload),
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		})
-			.then(function (response) {
-
-				console.log("Venue form response => ", response);
-				return response.json();
-			})
-			.then(function (jsonResponse) {
-
-				console.log("Venue form JSON response => ", jsonResponse);
-
-				// TODO: Redirect to appropriate page
-			})
-			.catch(function () {
-				document.getElementById('error').className = '';
-				console.log("Error submitting venue form");
-			})
-	}
+    {#/* Handling Venue form submission. */#}
+	{#document.getElementById('venue-form').onsubmit = function (e) {#}
+	{#	e.preventDefault();#}
+	{#	const formData = new FormData(document.getElementById('venue-form'));#}
+	{#	const payload = {#}
+	{#		'name': document.getElementById('name').value,#}
+	{#		'city': document.getElementById('city').value,#}
+	{#		'state': document.getElementById('state').value,#}
+	{#		'address': document.getElementById('address').value,#}
+	{#		'phone': document.getElementById('phone').value,#}
+	{#		'genres': formData.getAll('genres'),#}
+	{#		'facebook_link': document.getElementById('facebook_link').value,#}
+	{#		'image_link': document.getElementById('image_link').value,#}
+	{#		'website_link': document.getElementById('website_link').value,#}
+	{#		'seeking_talent': document.getElementById('seeking_talent').checked,#}
+	{#		'seeking_description': document.getElementById('seeking_description').value,#}
+	{#	}#}
+	{#	console.log("Venue form submitted [Form Data] ==> ", payload);#}
+    {##}
+	{#	fetch('/venues/create', {#}
+	{#		method: 'POST',#}
+	{#		body: JSON.stringify(payload),#}
+	{#		headers: {#}
+	{#			'Content-Type': 'application/json'#}
+	{#		}#}
+	{#	})#}
+	{#		.then(function (response) {#}
+    {##}
+	{#			console.log("Venue form response => ", response);#}
+	{#			return response.json();#}
+	{#		})#}
+	{#		.then(function (jsonResponse) {#}
+    {##}
+	{#			console.log("Venue form JSON response => ", jsonResponse);#}
+    {##}
+	{#			// TODO: Redirect to appropriate page#}
+	{#		})#}
+	{#		.catch(function () {#}
+	{#			document.getElementById('error').className = '';#}
+	{#			console.log("Error submitting venue form");#}
+	{#		})#}
+	{#}#}
 
     /* Handling Artist form submission. */
 	{#document.getElementById('artist-form').onsubmit = function (e) {#}
@@ -361,6 +361,7 @@
         {#}#}
 </script>
 
+<script type = "text/javascript" src = "/static/js/app.js"></script>
 <script type = "text/javascript" src = "//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 <script>window.jQuery || document.write('<script type="text/javascript" src="/static/js/libs/jquery-1.11.1.min.js"><\/script>')</script>
 <script type = "text/javascript" src = "/static/js/libs/bootstrap-3.1.1.min.js" defer></script>
