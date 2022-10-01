@@ -49,32 +49,6 @@ if (request_url === "/venues/create") {
 	}
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if (request_url === "/artists/create") {
 	/* Handling Artist form submission. */
 	document.getElementById('artist-form').onsubmit = function (e) {
@@ -116,6 +90,55 @@ if (request_url === "/artists/create") {
 			.catch(function () {
 				document.getElementById('error').className = '';
 				console.log("Error submitting artist form");
+			})
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+if (request_url === "/shows/create") {
+	/* Handling Show form submission. */
+	document.getElementById('show-form').onsubmit = function (e) {
+		e.preventDefault();
+		const payload = {
+			'venue_id': document.getElementById('venue_id').value,
+			'artist_id': document.getElementById('artist_id').value,
+			'start_time': document.getElementById('start_time').value,
+		}
+
+		console.log("Show payload => ", payload)
+
+		fetch('/shows/create', {
+			method: 'POST',
+			body: JSON.stringify(payload),
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		})
+			.then(function (response) {
+
+				console.log("Show form response => ", response);
+				return response.json();
+			})
+			.then(function (jsonResponse) {
+
+				console.log("Show form JSON response => ", jsonResponse);
+
+				// TODO: Redirect to appropriate page
+			})
+			.catch(function () {
+				document.getElementById('error').className = '';
+				console.log("Error submitting show form");
 			})
 	}
 }

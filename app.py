@@ -679,37 +679,35 @@ def shows():
 
 @app.route('/shows/create')
 def create_shows():
-    # renders form. do not touch.
+    # For show form rendering.
     form = ShowForm()
     return render_template('forms/new_show.html', form=form)
 
 
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
-    # called to create new shows in the db, upon submitting new show listing form
-    # TODO: insert form data as a new Show record in the db, instead
+    # Called to create new shows in the db, upon submitting new show listing form.
+    # Also inserts form data as a new Show record in the db.
 
     error = False
     body = {}
-    form = ShowForm()
 
     try:
-        # TODO: 1. Remember to validate the form fields (if form.validate():
-        #  2. Also adopt this pattern (name = form.name.data))
-        #  3. And show errors if they come up
-
         venue_id = request.get_json()['venue_id']
         artist_id = request.get_json()['artist_id']
         start_time = request.get_json()['start_time']
-
-        print("Show form request => ", request.get_json())
-        print("Show Form (WTF) => ", form.start_time)
 
         show = Show(
             venue_id=venue_id,
             artist_id=artist_id,
             start_time=start_time
         )
+
+        form = ShowForm(obj=show)
+
+        print("Show Form (Validated) => ", form.validate())
+        print("Show Form (WTF) => ", form.data)
+        print("Show Obj => ", show)
 
         db.session.add(show)
         db.session.commit()
@@ -726,15 +724,16 @@ def create_show_submission():
         db.session.close()
 
     if error:
+        # On unsuccessful db insert, flash an error instead.
+        flash('An error occurred. Show ' + show.name + ' could not be listed.')
+
         abort(400)
     else:
+        # On successful db insert, flash success
+        flash('Show ' + str(show.id) + ' was successfully listed!')
+
         return jsonify(body)
 
-    # on successful db insert, flash success
-    flash('Show was successfully listed!')
-    # TODO: on unsuccessful db insert, flash an error instead.
-    # e.g., flash('An error occurred. Show could not be listed.')
-    # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
     return render_template('pages/home.html')
 
 
