@@ -38,7 +38,6 @@ migrate = Migrate(app, db)
 # ----------------------------------------------------------------------------#
 
 class Venue(db.Model):
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     city = db.Column(db.String(120))
@@ -63,7 +62,6 @@ class Venue(db.Model):
 
 
 class Artist(db.Model):
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     city = db.Column(db.String(120))
@@ -87,7 +85,6 @@ class Artist(db.Model):
 
 
 class Show(db.Model):
-
     id = db.Column(db.Integer, primary_key=True)
     venue_id = db.Column(db.Integer, db.ForeignKey("venue.id"))
     artist_id = db.Column(db.Integer, db.ForeignKey("artist.id"))
@@ -235,6 +232,7 @@ def show_venue(venue_id):
         "genres": selected_venue.genres,
         "city": selected_venue.city,
         "state": selected_venue.state,
+        "address": selected_venue.address,
         "phone": selected_venue.phone,
         "seeking_talent": selected_venue.seeking_talent,
         "image_link": selected_venue.image_link,
@@ -498,7 +496,7 @@ def edit_artist_submission(artist_id):
         else:
             return redirect(url_for('show_artist', artist_id=artist_id))
     else:
-        print("FORM VALIDATION ERRORS *> ", form.errors)
+        print("ARTIST EDIT FORM VALIDATION ERRORS *> ", form.errors)
         return render_template('forms/edit_artist.html', form=form, artist=existing_artist)
 
 
@@ -506,16 +504,17 @@ def edit_artist_submission(artist_id):
 def edit_venue(venue_id):
     form = VenueForm()
 
-    venue = db.session.query(Venue.id, Venue.name, Venue.genres, Venue.city, Venue.state, Venue.phone,
+    venue = db.session.query(Venue.id, Venue.name, Venue.genres, Venue.city, Venue.state, Venue.address, Venue.phone,
                              Venue.website_link, Venue.facebook_link, Venue.seeking_talent,
                              Venue.seeking_description, Venue.image_link).filter(
         Venue.id == venue_id).first()
 
-    # TODO: populate form with values from venue with ID <venue_id>
+    # Populating form with values from venue with ID <venue_id>
     print("Edit venue GET request => ", venue)
     form.name.data = venue.name
     form.city.data = venue.city
     form.state.data = venue.state
+    form.address.data = venue.address
     form.phone.data = venue.phone
     form.image_link.data = venue.image_link
     form.genres.data = venue.genres
@@ -529,45 +528,50 @@ def edit_venue(venue_id):
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
-    # TODO: take values from the form submitted, and update existing
-    # venue record with ID <venue_id> using the new attributes
+    # Takes values from the form submitted, and update existing
+    # venue record with ID <venue_id> using the form attributes.
 
     existing_venue = db.session.query(Venue).filter(Venue.id == venue_id).first()
 
-    # TODO: if artist_form.validate():
-
     error = False
-    venue_body = {}
-    venue_form = VenueForm()
+    form = VenueForm()
 
-    print("Venue form name =>", venue_form.name.data)
+    print("Venue form ====", form.name.data)
 
-    try:
-        existing_venue.name = request.get_json()['name']
-        existing_venue.city = request.get_json()['city']
-        existing_venue.state = request.get_json()['state']
-        existing_venue.phone = request.get_json()['phone']
-        existing_venue.genres = request.get_json()['genres']
-        existing_venue.image_link = request.get_json()['image_link']
-        existing_venue.facebook_link = request.get_json()['facebook_link']
-        existing_venue.website_link = request.get_json()['website_link']
-        existing_venue.seeking_talent = venue_form.seeking_talent.data
-        existing_venue.seeking_description = request.get_json()['seeking_description']
+    if form.validate_on_submit():
+        print("VALID VENUE FORM **********")
 
-        print("Saving existing artist => ", existing_venue.name)
-        db.session.commit()
-    except:
-        error = True
-        db.session.rollback()
-        print(sys.exc_info())
-    finally:
-        db.session.close()
-    if error:
-        abort(400)
+        try:
+            existing_venue.name = form.name.data
+            existing_venue.city = form.city.data
+            existing_venue.state = form.state.data
+            existing_venue.address = form.address.data
+            existing_venue.phone = form.phone.data
+            existing_venue.genres = form.genres.data
+            existing_venue.image_link = form.image_link.data
+            existing_venue.facebook_link = form.facebook_link.data
+            existing_venue.website_link = form.website_link.data
+            existing_venue.seeking_talent = form.seeking_talent.data
+            existing_venue.seeking_description = form.seeking_description.data
+
+            print("Saving existing artist => ", existing_venue)
+            db.session.commit()
+
+            return redirect(url_for('show_venue', venue_id=venue_id))
+        except:
+            error = True
+            db.session.rollback()
+            print(sys.exc_info())
+        finally:
+            db.session.close()
+
+        if error:
+            abort(400)
+        else:
+            return redirect(url_for('show_venue', venue_id=venue_id))
     else:
-        return jsonify(venue_body)
-
-    return redirect(url_for('show_venue', venue_id=venue_id))
+        print("VENUE EDIT FORM VALIDATION ERRORS *> ", form.errors)
+        return render_template('forms/edit_venue.html', form=form, venue=existing_venue)
 
 
 #  Create Artist
