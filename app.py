@@ -13,6 +13,7 @@ from flask import Flask, render_template, request, flash, redirect, url_for, abo
 from flask_migrate import Migrate
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf import CSRFProtect
 
 from forms import *
 
@@ -21,6 +22,8 @@ from forms import *
 # ----------------------------------------------------------------------------#
 
 app = Flask(__name__)
+csrf = CSRFProtect(app)
+csrf.init_app(app)
 moment = Moment(app)
 app.config.from_object('config')
 db = SQLAlchemy(app)
@@ -437,7 +440,7 @@ def edit_artist(artist_id):
                               Artist.seeking_description, Artist.image_link).filter(
         Artist.id == artist_id).first()
 
-    # TODO: populate form with fields from artist with ID <artist_id>
+    # Populating form with fields from artist with ID <artist_id>
     print("Edit artist GET request => ", artist)
     form.name.data = artist.name
     form.city.data = artist.city
@@ -455,45 +458,48 @@ def edit_artist(artist_id):
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
-    # TODO: take values from the form submitted, and update existing
-    # artist record with ID <artist_id> using the new attributes
+    # Takes values from the form submitted, and updates the existing
+    # artist record with ID <artist_id> using the form attributes.
 
     existing_artist = db.session.query(Artist).filter(Artist.id == artist_id).first()
 
-    # TODO: if artist_form.validate():
-
     error = False
-    artist_body = {}
-    artist_form = ArtistForm()
+    form = ArtistForm()
 
-    print("Artist form name =>", artist_form.name.data)
+    print("Artist form ==== ", form.data)
 
-    try:
-        existing_artist.name = request.get_json()['name']
-        existing_artist.city = request.get_json()['city']
-        existing_artist.state = request.get_json()['state']
-        existing_artist.phone = request.get_json()['phone']
-        existing_artist.genres = request.get_json()['genres']
-        existing_artist.image_link = request.get_json()['image_link']
-        existing_artist.facebook_link = request.get_json()['facebook_link']
-        existing_artist.website_link = request.get_json()['website_link']
-        existing_artist.seeking_venue = artist_form.seeking_venue.data
-        existing_artist.seeking_description = request.get_json()['seeking_description']
+    if form.validate_on_submit():
+        print("VALID ********")
+        try:
+            existing_artist.name = form.name.data
+            existing_artist.city = form.city.data
+            existing_artist.state = form.state.data
+            existing_artist.phone = form.phone.data
+            existing_artist.genres = form.genres.data
+            existing_artist.image_link = form.image_link.data
+            existing_artist.facebook_link = form.facebook_link.data
+            existing_artist.website_link = form.website_link.data
+            existing_artist.seeking_venue = form.seeking_venue.data
+            existing_artist.seeking_description = form.seeking_description.data
 
-        print("Saving existing artist => ", existing_artist.name)
-        db.session.commit()
-    except:
-        error = True
-        db.session.rollback()
-        print(sys.exc_info())
-    finally:
-        db.session.close()
-    if error:
-        abort(400)
+            print("Saving existing artist => ", existing_artist)
+            db.session.commit()
+
+            return redirect(url_for('show_artist', artist_id=artist_id))
+        except:
+            error = True
+            db.session.rollback()
+            print(sys.exc_info())
+        finally:
+            db.session.close()
+
+        if error:
+            abort(400)
+        else:
+            return redirect(url_for('show_artist', artist_id=artist_id))
     else:
-        return jsonify(artist_body)
-
-    return redirect(url_for('show_artist', artist_id=artist_id))
+        print("FORM VALIDATION ERRORS *> ", form.errors)
+        return render_template('forms/edit_artist.html', form=form, artist=existing_artist)
 
 
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])

@@ -9,4 +9,6 @@ node_modules/
 yarn.lock
 
 # IDEA files
-.idea
+.idea/SQL-and-Data-Modeling-for-the-Web-attempt.iml
+.idea/misc.xml
+.idea/workspace.xml
