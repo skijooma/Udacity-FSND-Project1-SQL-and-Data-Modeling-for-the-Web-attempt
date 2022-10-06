@@ -639,8 +639,7 @@ def create_artist_submission():
 
 @app.route('/shows')
 def shows():
-    # displays list of shows at /shows
-    # TODO: replace with real venues data.
+    # Displays list of shows at /shows
 
     data = []
     shows = db.session.query(Show).all()
@@ -679,51 +678,45 @@ def create_show_submission():
     # Also inserts form data as a new Show record in the db.
 
     error = False
-    body = {}
+    form = ShowForm()
 
-    try:
-        venue_id = request.get_json()['venue_id']
-        artist_id = request.get_json()['artist_id']
-        start_time = request.get_json()['start_time']
+    print("Show creation form ==== ", form.data)
 
-        show = Show(
-            venue_id=venue_id,
-            artist_id=artist_id,
-            start_time=start_time
-        )
+    if form.validate_on_submit():
+        print("VALID CREATE ARTIST FORM **********")
+        try:
+            venue_id = form.venue_id.data
+            artist_id = form.artist_id.data
+            start_time = form.start_time.data
 
-        form = ShowForm(obj=show)
+            show = Show(
+                venue_id=venue_id,
+                artist_id=artist_id,
+                start_time=start_time
+            )
 
-        print("Show Form (Validated) => ", form.validate())
-        print("Show Form (WTF) => ", form.data)
-        print("Show Obj => ", show)
+            db.session.add(show)
+            db.session.commit()
 
-        db.session.add(show)
-        db.session.commit()
+            # On successful db insert, flash success
+            flash('Show ' + str(show.id) + ' was successfully listed!')
+        except:
+            error = True
+            db.session.rollback()
+            print(sys.exc_info())
+        finally:
+            db.session.close()
 
-        body['venue_id'] = show.venue_id
-        body['artist_id'] = show.artist_id
-        body['start_time'] = show.start_time
+        if error:
+            # On unsuccessful db insert, flash an error instead.
+            flash('An error occurred. Show ' + str(show.id) + ' could not be listed.')
+            abort(400)
+        else:
 
-    except:
-        error = True
-        db.session.rollback()
-        print(sys.exc_info())
-    finally:
-        db.session.close()
-
-    if error:
-        # On unsuccessful db insert, flash an error instead.
-        flash('An error occurred. Show ' + show.name + ' could not be listed.')
-
-        abort(400)
+            return render_template('pages/home.html')
     else:
-        # On successful db insert, flash success
-        flash('Show ' + str(show.id) + ' was successfully listed!')
 
-        return jsonify(body)
-
-    return render_template('pages/home.html')
+        return render_template('forms/new_show.html', form=form)
 
 
 @app.errorhandler(404)
