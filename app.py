@@ -256,76 +256,65 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-    # TODO: insert form data as a new Venue record in the db, instead
-    # TODO: modify data to be the data object returned from db insertion
+    # For inserting form data as a new Venue record in the db.
 
     error = False
-    body = {}
+    form = VenueForm()
 
-    try:
-        name = request.get_json()['name']
-        city = request.get_json()['city']
-        state = request.get_json()['state']
-        address = request.get_json()['address']
-        phone = request.get_json()['phone']
-        genres = request.get_json()['genres']
-        image_link = request.get_json()['image_link']
-        facebook_link = request.get_json()['facebook_link']
-        website_link = request.get_json()['website_link']
-        seeking_talent = request.get_json()['seeking_talent']
-        seeking_description = request.get_json()['seeking_description']
+    print("Venue creation form ==== ", form.data)
 
-        venue = Venue(
-            name=name,
-            city=city,
-            state=state,
-            address=address,
-            phone=phone,
-            genres=genres,
-            image_link=image_link,
-            facebook_link=facebook_link,
-            website_link=website_link,
-            seeking_talent=seeking_talent,
-            seeking_description=seeking_description
-        )
+    if form.validate_on_submit():
+        print("VALIDATE CREATE VENUE FORM ************")
 
-        form = VenueForm(obj=venue)
+        try:
+            name = form.name.data
+            city = form.city.data
+            state = form.state.data
+            address = form.address.data
+            phone = form.phone.data
+            genres = form.genres.data
+            image_link = form.image_link.data
+            facebook_link = form.facebook_link.data
+            website_link = form.website_link.data
+            seeking_talent = form.seeking_talent.data
+            seeking_description = form.seeking_description.data
 
-        print("Venue Form (Validated) => ", form.validate())
-        print("Venue Form (WTF) => ", form.data)
-        print("Venue Form (Seeking talent) => ", venue.seeking_talent)
+            venue = Venue(
+                name=name,
+                city=city,
+                state=state,
+                address=address,
+                phone=phone,
+                genres=genres,
+                image_link=image_link,
+                facebook_link=facebook_link,
+                website_link=website_link,
+                seeking_talent=seeking_talent,
+                seeking_description=seeking_description
+            )
 
-        db.session.add(venue)
-        db.session.commit()
+            db.session.add(venue)
+            db.session.commit()
 
-        body['name'] = venue.name
-        body['city'] = venue.city
-        body['state'] = venue.state
-        body['address'] = venue.address
-        body['phone'] = venue.phone
-        body['genres'] = venue.genres
-        body['image_link'] = venue.image_link
-        body['facebook_link'] = venue.facebook_link
-        body['website_link'] = venue.website_link
-        body['seeking_talent'] = venue.seeking_talent
-        body['seeking_description'] = venue.seeking_description
-    except:
-        error = True
-        db.session.rollback()
-        print(sys.exc_info())
-    finally:
-        db.session.close()
-    if error:
-        # On unsuccessful db insert, flash an error instead.
-        flash('An error occurred. Venue ' + venue.name + ' could not be listed.')
-        abort(400)
+            # On successful db insert, flash success
+            flash('Artist ' + venue.name + ' was successfully listed!')
+        except:
+            error = True
+            db.session.rollback()
+            print(sys.exc_info())
+        finally:
+            db.session.close()
+
+        if error:
+            # On unsuccessful db insert, flash an error instead.
+            flash('An error occurred. Venue ' + venue.name + ' could not be listed.')
+            abort(400)
+        else:
+
+            return render_template('pages/home.html')
     else:
-        # On successful db insert, flash success
-        flash('Venue ' + venue.name + ' was successfully listed!')
 
-        return jsonify(body)
-
-    return render_template('pages/home.html')
+        return render_template('forms/new_venue.html', form=form)
 
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
