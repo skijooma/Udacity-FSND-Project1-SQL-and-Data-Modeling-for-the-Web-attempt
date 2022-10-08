@@ -2,8 +2,9 @@
 {% block title %}Edit Artist{% endblock %}
 {% block content %}
     <div class = "form-wrapper">
-        <form class = "form" method = "post" action = "/artists/{{ artist.id }}/edit" id = "artist-edit-form" novalidate>
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <form class = "form" method = "post" action = "/artists/{{ artist.id }}/edit" id = "artist-edit-form"
+              novalidate>
+            <input type = "hidden" name = "csrf_token" value = "{{ csrf_token() }}">
             <h3 class = "form-heading">Edit artist <em>{{ artist.name }}</em></h3>
             <div class = "form-group">
                 <label for = "name">Name</label>
