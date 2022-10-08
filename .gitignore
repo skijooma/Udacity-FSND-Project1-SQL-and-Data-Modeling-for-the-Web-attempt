@@ -13,3 +13,8 @@ yarn.lock
 .idea/misc.xml
 .idea/workspace.xml
 .idea/codeStyles/
+
+CODEOWNERS
+fabfile.py
+
+venv
