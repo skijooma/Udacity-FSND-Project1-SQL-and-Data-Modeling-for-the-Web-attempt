@@ -210,6 +210,7 @@ def show_venue(venue_id):
             "city": selected_venue.city, "state": selected_venue.state,
             "address": selected_venue.address, "phone": selected_venue.phone,
             "seeking_talent": selected_venue.seeking_talent,
+            "facebook_link": selected_venue.facebook_link, "website": selected_venue.website_link,
             "image_link": selected_venue.image_link,
             "past_shows": [show._asdict() for show in past_shows],
             "upcoming_shows": [show._asdict() for show in upcoming_shows],
@@ -353,6 +354,7 @@ def show_artist(artist_id):
     data = {"id": db_artist.id, "name": db_artist.name, "genres": db_artist.genres,
             "city": db_artist.city, "state": db_artist.state, "phone": db_artist.phone,
             "seeking_venue": db_artist.seeking_venue, "image_link": db_artist.image_link,
+            "facebook_link": db_artist.facebook_link, "website": db_artist.website_link,
             "past_shows": [show._asdict() for show in past_shows],
             "upcoming_shows": [show._asdict() for show in upcoming_shows],
             "past_shows_count": past_shows_count, "upcoming_shows_count": upcoming_shows_count, }
@@ -572,13 +574,13 @@ def shows():
     shows = db.session.query(Show).all()
 
     for show in shows:
-        venue = db.session.query(Venue.name).filter(Venue.id == show.id).first()
+        venue = db.session.query(Venue.name).filter(Venue.id == show.venue_id).first()
         artist = db.session.query(Artist.name, Artist.image_link).filter(
-            Artist.id == show.id).first()
+            Artist.id == show.artist_id).first()
 
         show_obj = {"venue_id": show.venue_id, "venue_name": venue.name,
-                    "artist_id": show.artist_id, "artist_name": "", "artist_image_link": "",
-                    "start_time": show.start_time}
+                    "artist_id": show.artist_id, "artist_name": artist.name,
+                    "artist_image_link": artist.image_link, "start_time": show.start_time}
         data.append(show_obj)
 
     return render_template('pages/shows.html', shows=data)
