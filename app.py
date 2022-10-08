@@ -31,8 +31,6 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 
-# TODO: connect to a local postgresql database
-
 # ----------------------------------------------------------------------------#
 # Models.
 # ----------------------------------------------------------------------------#
@@ -81,7 +79,6 @@ class Artist(db.Model):
                f'image_link: {self.image_link}, facebook_link: {self.facebook_link}, ' \
                f'website_link: {self.website_link}, seeking_venue: {self.seeking_venue}, ' \
                f'seeking_description: {self.seeking_description}>'
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 
 class Show(db.Model):
@@ -93,9 +90,6 @@ class Show(db.Model):
     def __repr__(self):
         return f'<Show {self.id}, artist: {self.artist_id}, venue: {self.venue_id}, ' \
                f'start_time: {self.start_time}>'
-
-
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 
 # db.drop_all()
 db.create_all()
